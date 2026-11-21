@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URD-302 Interactive SNN Model Visualizer & Live Fine-Tuning Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #070b14;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      border-radius: 0.85rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 0.72rem;
+    }
+    input[type="range"] {
+      accent-color: #3b82f6;
+      cursor: pointer;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-950/95 px-5 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 backdrop-blur">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+      <div>
+        <h1 class="text-base md:text-lg font-bold tracking-tight text-white flex items-center flex-wrap gap-2">
+          <span>🧠 Nested Neural Oscillations: Interactive SNN Model Visualizer & Fine-Tuning Studio</span>
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 font-mono">
+            Online Temporal Credit Assignment
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400">
+          Researcher: <strong class="text-slate-200">Ko Sett Paing (KOSETTPAI)</strong> | Advisor: <strong class="text-slate-200">Dr. Etienne Mueller</strong> | CMKL University (URD-302)
+        </p>
+      </div>
+    </div>
+
+    <!-- QUICK DEMO SCENARIOS, LANGUAGE TOGGLE & GUIDE BUTTON -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-xs text-slate-400 mr-0.5 font-medium">1-Click Scenarios:</span>
+      <button onclick="applyPreset('short_theta')" class="text-xs px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 font-medium transition">
+        ⚡ Scenario 1: 100ms Theta Gain
+      </button>
+      <button onclick="applyPreset('long_alif')" class="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 font-medium transition">
+        🧬 Scenario 2: 400ms Long Delay Bridge
+      </button>
+      <button onclick="applyPreset('all_six')" class="text-xs px-2.5 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 font-medium transition">
+        🏆 Scenario 3: Compare All 6 Models
+      </button>
+
+      <button onclick="toggleHowToPlay()" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 font-semibold transition">
+        ❓ How to Play
+      </button>
+      <div id="statusBadge" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">
+        Ready
+      </div>
+    </div>
+  </header>
+
+  <!-- COLLAPSIBLE "HOW TO PLAY IN 4 SIMPLE STEPS" ONBOARDING BANNER -->
+  <section id="howToPlayBanner" class="bg-slate-900/95 border-b border-slate-800 px-5 py-3">
+    <div class="max-w-[1920px] mx-auto flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <div class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+          <span>🎯 Quick Interactive Guide: How to Play & Understand This Demo in 30 Seconds</span>
+        </div>
+        <button onclick="toggleHowToPlay()" class="text-xs text-slate-400 hover:text-white">✕ Hide Guide</button>
+      </div>
+      <div id="guideStepsGrid" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+        <!-- Populated on load -->
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1920px] w-full mx-auto">
+
+    <!-- LEFT SIDEBAR: 3-STEP CONTROLS (4 COLS) -->
+    <aside class="lg:col-span-4 space-y-4 flex flex-col">
+
+      <!-- STEP 1: DATASET GENERATOR -->
+      <section class="glass-card p-4 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+            <span class="step-badge bg-cyan-500 text-slate-950">1</span>
+            <span>Generate Spiking Task Dataset</span>
+          </h2>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-cyan-300 border border-slate-800" id="dsSummaryBadge">40 ch | Δt=5ms</span>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-300 mb-1 font-medium">Choose Temporal Memory Task</label>
+          <select id="datasetType" onchange="generateDataset()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:border-cyan-500 outline-none">
+            <option value="bellec_cue_accumulation">Task 1: Sequential Evidence Accumulation (5 Left/Right Cues → Silent Delay → Recall)</option>
+            <option value="delayed_cue_association">Task 2: Delayed Cue-Target Association & Hippocampal Comparator (3 Classes)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 pt-1">
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300 font-medium">Silent Delay</span>
+              <span class="font-mono text-cyan-300 font-bold" id="valDelay">300 ms</span>
+            </div>
+            <input id="inpDelay" type="range" min="100" max="800" step="50" value="300" class="w-full"
+              oninput="document.getElementById('valDelay').innerText = this.value + ' ms'" />
+            <div class="text-[10px] text-slate-500 mt-0.5">Memory gap ΔT</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300 font-medium">Cue Rate</span>
+              <span class="font-mono text-cyan-300 font-bold" id="valCueRate">80 Hz</span>
+            </div>
+            <input id="inpCueRate" type="range" min="40" max="130" step="10" value="80" class="w-full"
+              oninput="document.getElementById('valCueRate').innerText = this.value + ' Hz'" />
+            <div class="text-[10px] text-slate-500 mt-0.5">Signal strength</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300 font-medium">Noise Rate</span>
+              <span class="font-mono text-cyan-300 font-bold" id="valBgRate">10 Hz</span>
+            </div>
+            <input id="inpBgRate" type="range" min="2" max="30" step="2" value="10" class="w-full"
+              oninput="document.getElementById('valBgRate').innerText = this.value + ' Hz'" />
+            <div class="text-[10px] text-slate-500 mt-0.5">Background noise</div>
+          </div>
+        </div>
+
+        <button onclick="generateDataset()" class="w-full py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition shadow flex items-center justify-center gap-2">
+          <span>🎲 1. Generate New Trial Dataset & Preview Input Spikes</span>
+        </button>
+      </section>
+
+      <!-- STEP 2: SELECT FROM 6 SNN MODELS -->
+      <section class="glass-card p-4 space-y-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+            <span class="step-badge bg-amber-400 text-slate-950">2</span>
+            <span>Select Spiking Models to Compare</span>
+          </h2>
+          <span class="text-[11px] text-slate-400">Select 1–6 models</span>
+        </div>
+
+        <div class="space-y-1.5 max-h-64 overflow-y-auto pr-1" id="modelCheckboxes">
+          {% for mid, m in models.items() %}
+          <label class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-900/85 border border-slate-800 hover:border-slate-600 cursor-pointer transition">
+            <input type="checkbox" name="model_select" value="{{ mid }}"
+              {% if mid in ['lif_eprop', 'lif_theta_eprop', 'alif_theta_eprop'] %}checked{% endif %}
+              onchange="onModelSelectionChange()"
+              class="mt-0.5 rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0" />
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1 flex-wrap">
+                <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: {{ m.color }}"></span>
+                  <span>{{ m.name }}</span>
+                </span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">{{ m.role_badge }}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug mt-0.5">{{ m.description }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- STEP 3: PARAMETER FINE-TUNING & RUN -->
+      <section class="glass-card p-4 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
+            <span class="step-badge bg-emerald-400 text-slate-950">3</span>
+            <span>Fine-Tune Parameters & Run Live</span>
+          </h2>
+          <span class="text-[11px] font-mono text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">20–30s Live Run</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Training Epochs</span>
+              <span class="font-mono text-emerald-300 font-bold" id="valEpochs">20</span>
+            </div>
+            <input id="inpEpochs" type="range" min="8" max="40" step="1" value="20" class="w-full"
+              oninput="document.getElementById('valEpochs').innerText = this.value" />
+            <div class="text-[10px] text-slate-500">Number of learning rounds</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Learning Rate η</span>
+              <span class="font-mono text-emerald-300 font-bold" id="valLr">0.0045</span>
+            </div>
+            <input id="inpLr" type="range" min="0.001" max="0.012" step="0.0005" value="0.0045" class="w-full"
+              oninput="document.getElementById('valLr').innerText = parseFloat(this.value).toFixed(4)" />
+            <div class="text-[10px] text-slate-500">Synaptic plasticity speed</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Membrane τ_m</span>
+              <span class="font-mono text-blue-300 font-bold" id="valTauM">20 ms</span>
+            </div>
+            <input id="inpTauM" type="range" min="10" max="50" step="5" value="20" class="w-full"
+              oninput="document.getElementById('valTauM').innerText = this.value + ' ms'" />
+            <div class="text-[10px] text-slate-500">Fast voltage decay time</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Adaptation τ_a</span>
+              <span class="font-mono text-blue-300 font-bold" id="valTauA">500 ms</span>
+            </div>
+            <input id="inpTauA" type="range" min="100" max="1000" step="50" value="500" class="w-full"
+              oninput="document.getElementById('valTauA').innerText = this.value + ' ms'" />
+            <div class="text-[10px] text-slate-500">Slow ALIF memory trace</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">ALIF Strength β_a</span>
+              <span class="font-mono text-amber-300 font-bold" id="valBetaA">1.60</span>
+            </div>
+            <input id="inpBetaA" type="range" min="0.0" max="3.0" step="0.2" value="1.6" class="w-full"
+              oninput="document.getElementById('valBetaA').innerText = parseFloat(this.value).toFixed(2)" />
+            <div class="text-[10px] text-slate-500">Threshold jump per spike</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Hidden Neurons</span>
+              <span class="font-mono text-amber-300 font-bold" id="valHidden">64</span>
+            </div>
+            <input id="inpHidden" type="range" min="32" max="96" step="16" value="64" class="w-full"
+              oninput="document.getElementById('valHidden').innerText = this.value" />
+            <div class="text-[10px] text-slate-500">Recurrent network size</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Theta Freq f_θ</span>
+              <span class="font-mono text-purple-300 font-bold" id="valFTheta">8.0 Hz</span>
+            </div>
+            <input id="inpFTheta" type="range" min="0" max="16" step="1" value="8" class="w-full"
+              oninput="document.getElementById('valFTheta').innerText = parseFloat(this.value).toFixed(1) + ' Hz'" />
+            <div class="text-[10px] text-slate-500">8 Hz = 125ms theta cycle</div>
+          </div>
+
+          <div class="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-300">Theta Gain A_θ</span>
+              <span class="font-mono text-purple-300 font-bold" id="valATheta">0.15</span>
+            </div>
+            <input id="inpATheta" type="range" min="0.0" max="0.35" step="0.01" value="0.15" class="w-full"
+              oninput="document.getElementById('valATheta').innerText = parseFloat(this.value).toFixed(2)" />
+            <div class="text-[10px] text-slate-500">Oscillation wave amplitude</div>
+          </div>
+        </div>
+
+        <!-- OMISSION PROBE TOGGLE -->
+        <label class="flex items-center justify-between p-2.5 rounded-lg bg-rose-950/35 border border-rose-800/60 cursor-pointer hover:bg-rose-950/50 transition">
+          <div class="pr-2">
+            <span class="text-xs font-bold text-rose-300">🚨 Omission Probe (Withhold Expected Target at Recall)</span>
+            <p class="text-[10px] text-slate-300 mt-0.5">
+              Turn ON after training to test if the model actively predicts the target: withholding the target triggers <strong class="text-amber-300">CA1⁻ Surprise / Violation Spikes</strong>!
+            </p>
+          </div>
+          <input type="checkbox" id="chkOmitTarget" onchange="probeCurrentModel()" class="w-4 h-4 rounded bg-slate-800 border-rose-600 text-rose-500 shrink-0" />
+        </label>
+
+        <!-- RUN / STOP BUTTONS -->
+        <div class="flex gap-2 pt-1">
+          <button id="btnRunTrain" onclick="startLiveTraining()" class="flex-1 py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2">
+            <span>▶ 2. Run Live Fine-Tuning (Watch Spikes Evolve)</span>
+          </button>
+          <button id="btnStopTrain" onclick="stopLiveTraining()" disabled class="py-2.5 px-3 rounded-lg bg-rose-700/60 hover:bg-rose-600 disabled:opacity-40 text-white font-bold text-xs transition">
+            ⏹ Stop
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- RIGHT MAIN STUDIO: LIVE NARRATIVE + MODEL VISUALIZER + SPIKE RASTERS (8 COLS) -->
+    <section class="lg:col-span-8 space-y-3.5 flex flex-col">
+
+      <!-- LIVE DYNAMIC INTERPRETATION BANNER ("WHAT YOU ARE SEEING RIGHT NOW") -->
+      <div class="glass-card p-3.5 border-l-4 border-l-amber-400 bg-slate-900/95">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+            <span>💡 Live Neural Activity Decoder — What You Are Seeing Right Now:</span>
+          </span>
+          <span id="liveNarrativeStageBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+            Epoch 0 (Untrained Network)
+          </span>
+        </div>
+        <p id="liveNarrativeText" class="text-xs text-slate-200 leading-relaxed">
+          Click <strong>"▶ 2. Run Live Fine-Tuning"</strong> on the left to start training. You will watch the models learn epoch-by-epoch over ~20 seconds: notice how <strong>Red Error Spikes (CA1⁺ Misses)</strong> disappear as accuracy rises!
+        </p>
+      </div>
+
+      <!-- INTERACTIVE MODEL FOCUS BAR + EPOCH SCRUBBER + SLOW-MO PLAYBACK -->
+      <div class="glass-card p-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <!-- Model Selector Dropdown for Main Spike Visualizer -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-semibold text-slate-300">🔍 Viewing Internal Spikes of:</span>
+            <select id="activeModelView" onchange="onChangeActiveModelView()" class="bg-slate-900 border border-blue-500/60 rounded-lg px-2.5 py-1.5 text-xs font-bold text-blue-300 outline-none">
+              {% for mid, m in models.items() %}
+              <option value="{{ mid }}" {% if mid == 'alif_theta_eprop' %}selected{% endif %}>{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- PLAIN-LANGUAGE KPI PILLS FOR CURRENTLY VIEWED MODEL -->
+          <div class="flex items-center gap-2 flex-wrap text-xs font-mono">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700">
+              Epoch: <strong id="kpiEpoch" class="text-white">0 / 0</strong>
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700" title="Classification accuracy on held-out trials">
+              Accuracy: <strong id="kpiAcc" class="text-emerald-400">--%</strong>
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700" title="Spikes fired by hidden neurons during the silent memory delay">
+              Delay Bridge Spikes: <strong id="kpiDelaySpk" class="text-cyan-400">0</strong>
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-700/70 text-rose-300" title="Red Error Spikes when the model fails to predict the target (High at Epoch 0 -> Drops to 0 as it learns!)">
+              ❌ Miss Error Spikes (CA1⁺): <strong id="kpiCa1Pos">0</strong>
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-amber-950/60 border border-amber-700/70 text-amber-300" title="Amber Surprise Spikes when the expected target is omitted (Omission Probe)">
+              ⚡ Surprise Spikes (CA1⁻): <strong id="kpiCa1Neg">0</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- EPOCH SNAPSHOT SCRUBBER & MILLISECOND PLAYBACK CONTROLS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-0.5">
+          <!-- Epoch Scrubber (Compare Untrained vs Trained Spikes!) -->
+          <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+            <span class="text-[11px] font-semibold text-amber-300 whitespace-nowrap" title="Drag left to Epoch 0 (untrained) and right to Final Epoch (trained) to see error spikes disappear!">
+              ⏪ Compare Learning Epochs:
+            </span>
+            <input id="epochScrubber" type="range" min="0" max="0" step="1" value="0" class="flex-1"
+              oninput="onScrubEpoch(this.value)" />
+            <span id="epochScrubberLabel" class="text-[11px] font-mono text-white font-bold whitespace-nowrap">Ep 0</span>
+          </div>
+
+          <!-- Millisecond Slow-Mo Spike Animation Scrubber -->
+          <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+            <button id="btnPlaySlowMo" onclick="toggleSlowMoPlayback()" class="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold whitespace-nowrap transition shadow">
+              ▶ Play Slow-Mo Animation
+            </button>
+            <input id="timeScrubber" type="range" min="0" max="100" step="1" value="100" class="flex-1"
+              oninput="onScrubTime(this.value)" />
+            <span id="timeScrubberLabel" class="text-[11px] font-mono text-cyan-300 whitespace-nowrap">t = End</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP VISUALIZER ROW: LIVE NEURAL NETWORK TOPOLOGY + LIVE LEARNING CURVES -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <!-- CANVAS 1: INTERACTIVE NEURAL NETWORK VISUALIZER (7 COLS) -->
+        <div class="xl:col-span-7 glass-card p-3 flex flex-col">
+          <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              🕸️ Panel A: Live Spiking Neural Network Visualizer
+            </h3>
+            <span id="predStatusPill" class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+              Waiting for Run...
+            </span>
+          </div>
+          <canvas id="netTopologyCanvas" width="680" height="245" class="w-full h-[245px] rounded-lg bg-slate-950 border border-slate-800/90"></canvas>
+        </div>
+
+        <!-- CANVAS 4: MULTI-MODEL LIVE ACCURACY CONVERGENCE (5 COLS) -->
+        <div class="xl:col-span-5 glass-card p-3 flex flex-col">
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              📈 Panel B: Multi-Model Accuracy vs. Epoch
+            </h3>
+            <span id="elapsedTimer" class="text-[11px] font-mono text-emerald-400">0.0s</span>
+          </div>
+          <canvas id="learningCurveCanvas" width="480" height="245" class="w-full h-[245px] rounded-lg bg-slate-950 border border-slate-800/90"></canvas>
+        </div>
+      </div>
+
+      <!-- CANVAS 2: MULTI-LAYER SPIKE RASTER VISUALIZER (SPIKES APPEARING / DISAPPEARING) -->
+      <div class="glass-card p-3 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            ⚡ Panel C: Single-Trial Spike Raster Timeline (① Cue Input → ② Silent Delay Bridge → ③ Recall & Error Spikes)
+          </h3>
+          <div class="flex items-center gap-3 text-[11px] flex-wrap">
+            <span class="flex items-center gap-1 text-cyan-300"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-400"></span> Input Spikes</span>
+            <span class="flex items-center gap-1 text-blue-300"><span class="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> Hidden Bridge Spikes</span>
+            <span class="flex items-center gap-1 text-rose-300 font-semibold"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> ❌ Miss Error Spikes (CA1⁺)</span>
+            <span class="flex items-center gap-1 text-amber-300 font-semibold"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span> ⚡ Surprise Spikes (CA1⁻)</span>
+          </div>
+        </div>
+        <canvas id="rasterCanvas" width="1150" height="255" class="w-full h-[255px] rounded-lg bg-slate-950 border border-slate-800/90"></canvas>
+      </div>
+
+      <!-- CANVAS 3: BIOPHYSICAL TRACES (MEMBRANE V_m, DYNAMIC THRESHOLD A_t, THETA WAVE, ELIGIBILITY TRACE) -->
+      <div class="glass-card p-3 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            🌊 Panel D: Internal Neuron Signals (Why the Memory Survives the Silent Delay)
+          </h3>
+          <div class="flex items-center gap-3 text-[11px] flex-wrap">
+            <span class="text-emerald-400 font-mono font-semibold">— Membrane Voltage V_m(t)</span>
+            <span class="text-amber-400 font-mono font-semibold">-- Adaptive Threshold A(t)</span>
+            <span class="text-purple-400 font-mono font-semibold">— Theta-Gamma Wave I_osc(t)</span>
+            <span class="text-cyan-400 font-mono font-semibold">— Synaptic Eligibility Trace |ē(t)|</span>
+          </div>
+        </div>
+        <canvas id="tracesCanvas" width="1150" height="170" class="w-full h-[170px] rounded-lg bg-slate-950 border border-slate-800/90"></canvas>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // ============================================================================
+    // GLOBAL CLIENT STATE
+    // ============================================================================
+    const MODEL_META = {{ models | tojson }};
+    let datasetInfo = null;
+    let isTrainingActive = false;
+
+    // Stores per-model training history: { [model_id]: { accCurve: [], lossCurve: [], snapshots: { [ep]: telemetry } } }
+    let modelHistories = {};
+    let currentEpoch = 0;
+    let maxTrainedEpoch = 0;
+
+    // Slow-motion millisecond playback state
+    let currentStepCursor = 9999;
+    let totalStepsInTrial = 100;
+    let dtMs = 5.0;
+    let slowMoTimer = null;
+
+    // ============================================================================
+    // 1. ONBOARDING GUIDE & DYNAMIC NARRATIVE (100% ENGLISH)
+    // ============================================================================
+    function renderGuideSteps() {
+      const grid = document.getElementById("guideStepsGrid");
+      grid.innerHTML = `
+        <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+          <div class="font-bold text-cyan-400 mb-0.5">Step 1: Set Silent Delay (Left Panel)</div>
+          <p class="text-slate-300 leading-snug">Pick Task 1 or Task 2 and choose a <strong>Silent Delay (e.g. 300 ms)</strong>. The network sees sensory cues at the start, then must remember them across the silent gap.</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+          <div class="font-bold text-amber-400 mb-0.5">Step 2: Choose SNN Models</div>
+          <p class="text-slate-300 leading-snug">Compare <strong>Standard LIF (M1)</strong> against <strong>Theta-Gamma Gated (M2)</strong> and <strong>Adaptive ALIF + Theta (M4)</strong>, or click a <strong>1-Click Scenario</strong> at the top right.</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+          <div class="font-bold text-emerald-400 mb-0.5">Step 3: Click "▶ Run Live Fine-Tuning"</div>
+          <p class="text-slate-300 leading-snug">Watch live over ~20 seconds as accuracy climbs in <strong>Panel B</strong> and <strong>Red Miss Error Spikes (CA1⁺)</strong> in <strong>Panel C</strong> disappear as the model learns!</p>
+        </div>
+        <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+          <div class="font-bold text-purple-400 mb-0.5">Step 4: Scrub Epochs & Play Slow-Mo</div>
+          <p class="text-slate-300 leading-snug">Drag <strong>⏪ Compare Learning Epochs</strong> between <code>Ep 0</code> and <code>Ep 20</code>, click <strong>▶ Play Slow-Mo</strong>, or check <strong>🚨 Omission Probe</strong> to trigger surprise spikes!</p>
+        </div>`;
+    }
+
+    function toggleHowToPlay() {
+      const b = document.getElementById("howToPlayBanner");
+      b.classList.toggle("hidden");
+    }
+
+    function updateLiveNarrative(mid, telem) {
+      const meta = MODEL_META[mid];
+      const hist = modelHistories[mid];
+      const acc = (hist && hist.accCurve && hist.accCurve[currentEpoch] !== undefined)
+        ? hist.accCurve[currentEpoch].toFixed(1)
+        : "--";
+      const omit = document.getElementById("chkOmitTarget").checked;
+      const missCount = telem.ca1_pos_miss_spikes.length;
+      const violCount = telem.ca1_neg_violation_spikes.length;
+      const delaySpk = telem.delay_bridge_spikes || 0;
+      const delayMs = datasetInfo ? datasetInfo.delay_ms : 300;
+
+      const stageBadge = document.getElementById("liveNarrativeStageBadge");
+      const textEl = document.getElementById("liveNarrativeText");
+
+      stageBadge.innerText = omit
+        ? `🚨 Omission Probe Active (Epoch ${currentEpoch})`
+        : (currentEpoch === 0 ? `Epoch 0 (Untrained Baseline)` : `Epoch ${currentEpoch} / ${maxTrainedEpoch} (Acc: ${acc}%)`);
+
+      if (omit) {
+        textEl.innerHTML =
+          `<strong>🚨 Omission Probe (Expectation Violation Test):</strong> The sensory target was intentionally withheld during the recall window! Because <strong>${meta.name}</strong> actively predicted Class ${telem.pred_label}, the comparator detected an unexpected omission and fired <strong class="text-amber-300">${violCount} Surprise / Violation Spikes (CA1⁻ in amber)</strong> in Panel C.`;
+      } else if (currentEpoch === 0) {
+        textEl.innerHTML =
+          `<strong>Untrained State (Epoch 0):</strong> Viewing <strong>${meta.name}</strong> across a <strong>${delayMs} ms silent delay</strong>. Because synaptic weights are untrained, readout confidence is low and the comparator emits <strong class="text-rose-400">${missCount} Red Miss Error Spikes (CA1⁺)</strong> in Panel C. Click <strong>"▶ 2. Run Live Fine-Tuning"</strong> to watch the model learn!`;
+      } else {
+        textEl.innerHTML =
+          `<strong>Epoch ${currentEpoch} (${meta.name} — Accuracy: <span class="text-emerald-400">${acc}%</span>):</strong> During the <strong>${delayMs} ms silent delay (Zone ② in Panel C)</strong>, the recurrent layer maintained <strong class="text-cyan-300">${delaySpk} bridge spikes</strong> and active eligibility traces (cyan curve in Panel D). In the recall window (Zone ③), <strong>Red Miss Error Spikes (CA1⁺)</strong> dropped to <strong class="text-rose-400">${missCount} spikes</strong> (${telem.is_correct ? "✔ Correct Class Predicted!" : "still converging..."}). Drag the <strong>⏪ Epoch Slider</strong> back to Ep 0 to compare before vs. after learning!`;
+      }
+    }
+
+    // ============================================================================
+    // 2. INITIALIZATION & DATASET GENERATION
+    // ============================================================================
+    window.addEventListener("DOMContentLoaded", () => {
+      renderGuideSteps();
+      generateDataset();
+    });
+
+    function getSelectedModelIds() {
+      const boxes = document.querySelectorAll('input[name="model_select"]:checked');
+      const ids = Array.from(boxes).map(cb => cb.value);
+      return ids.length > 0 ? ids : ["alif_theta_eprop"];
+    }
+
+    function onModelSelectionChange() {
+      const ids = getSelectedModelIds();
+      const activeSel = document.getElementById("activeModelView");
+      if (!ids.includes(activeSel.value)) {
+        activeSel.value = ids[0];
+      }
+      drawLearningCurves();
+    }
+
+    function applyPreset(presetName) {
+      const boxes = document.querySelectorAll('input[name="model_select"]');
+      document.getElementById("chkOmitTarget").checked = false;
+      if (presetName === "short_theta") {
+        document.getElementById("datasetType").value = "bellec_cue_accumulation";
+        document.getElementById("inpDelay").value = 100;
+        document.getElementById("valDelay").innerText = "100 ms";
+        document.getElementById("inpFTheta").value = 8;
+        document.getElementById("valFTheta").innerText = "8.0 Hz";
+        document.getElementById("inpATheta").value = 0.16;
+        document.getElementById("valATheta").innerText = "0.16";
+        document.getElementById("inpEpochs").value = 20;
+        document.getElementById("valEpochs").innerText = "20";
+        boxes.forEach(b => b.checked = ["lif_eprop", "lif_theta_eprop", "alif_theta_eprop"].includes(b.value));
+        document.getElementById("activeModelView").value = "lif_theta_eprop";
+      } else if (presetName === "long_alif") {
+        document.getElementById("datasetType").value = "bellec_cue_accumulation";
+        document.getElementById("inpDelay").value = 400;
+        document.getElementById("valDelay").innerText = "400 ms";
+        document.getElementById("inpTauA").value = 600;
+        document.getElementById("valTauA").innerText = "600 ms";
+        document.getElementById("inpBetaA").value = 1.8;
+        document.getElementById("valBetaA").innerText = "1.80";
+        document.getElementById("inpEpochs").value = 22;
+        document.getElementById("valEpochs").innerText = "22";
+        boxes.forEach(b => b.checked = ["lif_eprop", "alif_eprop", "alif_theta_eprop"].includes(b.value));
+        document.getElementById("activeModelView").value = "alif_theta_eprop";
+      } else if (presetName === "all_six") {
+        document.getElementById("inpDelay").value = 250;
+        document.getElementById("valDelay").innerText = "250 ms";
+        document.getElementById("inpEpochs").value = 18;
+        document.getElementById("valEpochs").innerText = "18";
+        boxes.forEach(b => b.checked = true);
+        document.getElementById("activeModelView").value = "alif_theta_eprop";
+      }
+      generateDataset();
+    }
+
+    async function generateDataset() {
+      stopLiveTraining(false);
+      stopSlowMoPlayback();
+      const payload = {
+        dataset_type: document.getElementById("datasetType").value,
+        delay_ms: parseInt(document.getElementById("inpDelay").value),
+        cue_rate_hz: parseFloat(document.getElementById("inpCueRate").value),
+        bg_rate_hz: parseFloat(document.getElementById("inpBgRate").value),
+        batch_size: 36,
+        seed: 42
+      };
+
+      setStatus("Generating spiking dataset...", "text-cyan-400");
+      const res = await fetch("/api/generate_dataset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        datasetInfo = data.dataset;
+        totalStepsInTrial = datasetInfo.total_steps;
+        dtMs = datasetInfo.dt_ms;
+        currentStepCursor = totalStepsInTrial - 1;
+        currentEpoch = 0;
+        maxTrainedEpoch = 0;
+        updateEpochScrubber(0, 0);
+
+        const tScrub = document.getElementById("timeScrubber");
+        tScrub.max = totalStepsInTrial - 1;
+        tScrub.value = totalStepsInTrial - 1;
+        document.getElementById("timeScrubberLabel").innerText = `t = ${datasetInfo.total_duration_ms} ms`;
+        document.getElementById("dsSummaryBadge").innerText =
+          `${datasetInfo.input_dim} ch | T=${datasetInfo.total_duration_ms}ms (${datasetInfo.total_input_spikes} spk)`;
+
+        await probeCurrentModel();
+        setStatus("Dataset Ready — Click '▶ 2. Run Live Fine-Tuning'", "text-emerald-400");
+      }
+    }
+
+    // ============================================================================
+    // 3. VERCEL-SAFE LIVE EPOCH-BY-EPOCH TRAINING LOOP (20-30s Live Updates)
+    // ============================================================================
+    async function startLiveTraining() {
+      stopLiveTraining(false);
+      stopSlowMoPlayback();
+
+      const selectedModels = getSelectedModelIds();
+      const epochs = parseInt(document.getElementById("inpEpochs").value);
+      const lr = parseFloat(document.getElementById("inpLr").value);
+      const tauM = parseFloat(document.getElementById("inpTauM").value);
+      const tauA = parseFloat(document.getElementById("inpTauA").value);
+      const betaA = parseFloat(document.getElementById("inpBetaA").value);
+      const hidden = parseInt(document.getElementById("inpHidden").value);
+      const fTheta = parseFloat(document.getElementById("inpFTheta").value);
+      const aTheta = parseFloat(document.getElementById("inpATheta").value);
+      const omit = document.getElementById("chkOmitTarget").checked;
+
+      const activeSel = document.getElementById("activeModelView");
+      if (!selectedModels.includes(activeSel.value)) {
+        activeSel.value = selectedModels[0];
+      }
+
+      modelHistories = {};
+      selectedModels.forEach(mid => {
+        modelHistories[mid] = { accCurve: [], lossCurve: [], snapshots: {} };
+      });
+
+      isTrainingActive = true;
+      document.getElementById("btnRunTrain").disabled = true;
+      document.getElementById("btnRunTrain").classList.add("opacity-50");
+      document.getElementById("btnStopTrain").disabled = false;
+
+      const t0 = performance.now();
+      setStatus(`Initializing ${selectedModels.length} SNN models...`, "text-amber-400");
+
+      try {
+        // Step A: Initialize Epoch 0
+        const initRes = await fetch("/api/init_train", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            models: selectedModels,
+            hidden_dim: hidden,
+            lr: lr,
+            tau_mem_ms: tauM,
+            tau_adapt_ms: tauA,
+            beta_adapt: betaA,
+            f_theta: fTheta,
+            a_theta: aTheta,
+            omit_target: omit
+          })
+        });
+        const initData = await initRes.json();
+        if (initData.status === "success") {
+          currentEpoch = 0;
+          maxTrainedEpoch = 0;
+          Object.keys(initData.models).forEach(mid => {
+            modelHistories[mid].accCurve = [initData.models[mid].acc];
+            modelHistories[mid].snapshots[0] = initData.models[mid].telemetry;
+          });
+          updateEpochScrubber(0, 0);
+          renderAllCanvases();
+        }
+
+        // Step B: Stream Epoch 1 .. epochs
+        for (let ep = 1; ep <= epochs; ep++) {
+          if (!isTrainingActive) break;
+          const epStart = performance.now();
+
+          const stepRes = await fetch("/api/step_train", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              epoch: ep,
+              steps_per_epoch: 2,
+              omit_target: document.getElementById("chkOmitTarget").checked
+            })
+          });
+          const stepData = await stepRes.json();
+          if (!isTrainingActive) break;
+
+          if (stepData.status === "success") {
+            currentEpoch = ep;
+            maxTrainedEpoch = ep;
+            const elapsedSec = ((performance.now() - t0) / 1000).toFixed(1);
+            document.getElementById("elapsedTimer").innerText = `${elapsedSec}s`;
+            setStatus(`Live Fine-Tuning: Epoch ${ep} / ${epochs} (${elapsedSec}s)`, "text-amber-300");
+
+            Object.keys(stepData.models).forEach(mid => {
+              if (!modelHistories[mid]) {
+                modelHistories[mid] = { accCurve: [], lossCurve: [], snapshots: {} };
+              }
+              const mdata = stepData.models[mid];
+              modelHistories[mid].accCurve.push(mdata.acc);
+              modelHistories[mid].lossCurve.push(mdata.loss);
+              modelHistories[mid].snapshots[ep] = mdata.telemetry;
+            });
+
+            updateEpochScrubber(ep, ep);
+            renderAllCanvases();
+          }
+
+          // Smooth visual pacing (~350ms minimum per epoch so 20 epochs takes ~15-25s)
+          const stepTime = performance.now() - epStart;
+          if (stepTime < 320 && isTrainingActive) {
+            await new Promise(r => setTimeout(r, 320 - stepTime));
+          }
+        }
+
+        if (isTrainingActive) {
+          const totalSec = ((performance.now() - t0) / 1000).toFixed(1);
+          setStatus(`✔ Training Complete in ${totalSec}s! Drag Epoch Slider or Play Slow-Mo`, "text-emerald-400");
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("Training interrupted.", "text-rose-400");
+      } finally {
+        stopLiveTraining(false);
+      }
+    }
+
+    function stopLiveTraining(userCancelled = true) {
+      isTrainingActive = false;
+      document.getElementById("btnRunTrain").disabled = false;
+      document.getElementById("btnRunTrain").classList.remove("opacity-50");
+      document.getElementById("btnStopTrain").disabled = true;
+      if (userCancelled) {
+        setStatus("Training paused by user.", "text-rose-400");
+      }
+    }
+
+    function updateEpochScrubber(val, maxVal) {
+      const scrub = document.getElementById("epochScrubber");
+      scrub.max = maxVal;
+      scrub.value = val;
+      document.getElementById("epochScrubberLabel").innerText = `Ep ${val}/${maxVal}`;
+    }
+
+    function onScrubEpoch(val) {
+      currentEpoch = parseInt(val);
+      document.getElementById("epochScrubberLabel").innerText = `Ep ${currentEpoch}/${maxTrainedEpoch}`;
+      renderAllCanvases();
+    }
+
+    function onChangeActiveModelView() {
+      const mid = document.getElementById("activeModelView").value;
+      if (modelHistories[mid] && modelHistories[mid].snapshots[currentEpoch]) {
+        renderAllCanvases();
+      } else {
+        probeCurrentModel();
+      }
+    }
+
+    async function probeCurrentModel() {
+      const mid = document.getElementById("activeModelView").value;
+      const omit = document.getElementById("chkOmitTarget").checked;
+      const res = await fetch("/api/probe_trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model_id: mid, sample_idx: 0, omit_target: omit })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        if (!modelHistories[mid]) {
+          modelHistories[mid] = { accCurve: [], lossCurve: [], snapshots: {} };
+        }
+        modelHistories[mid].snapshots[currentEpoch] = data.telemetry;
+        totalStepsInTrial = data.telemetry.total_steps;
+        currentStepCursor = totalStepsInTrial - 1;
+        document.getElementById("timeScrubber").max = totalStepsInTrial - 1;
+        document.getElementById("timeScrubber").value = currentStepCursor;
+        renderAllCanvases();
+      }
+    }
+
+    // ============================================================================
+    // 4. SLOW-MOTION MILLISECOND PLAYBACK
+    // ============================================================================
+    function toggleSlowMoPlayback() {
+      if (slowMoTimer) {
+        stopSlowMoPlayback();
+        return;
+      }
+      if (currentStepCursor >= totalStepsInTrial - 1) {
+        currentStepCursor = 0;
+      }
+      document.getElementById("btnPlaySlowMo").innerText = "⏸ Pause Slow-Mo";
+      slowMoTimer = setInterval(() => {
+        currentStepCursor += 1;
+        if (currentStepCursor >= totalStepsInTrial) {
+          stopSlowMoPlayback();
+          currentStepCursor = totalStepsInTrial - 1;
+        }
+        document.getElementById("timeScrubber").value = currentStepCursor;
+        document.getElementById("timeScrubberLabel").innerText = `t = ${Math.round(currentStepCursor * dtMs)} ms`;
+        renderAllCanvases();
+      }, 65);
+    }
+
+    function stopSlowMoPlayback() {
+      if (slowMoTimer) {
+        clearInterval(slowMoTimer);
+        slowMoTimer = null;
+      }
+      document.getElementById("btnPlaySlowMo").innerText = "▶ Play Slow-Mo Animation";
+    }
+
+    function onScrubTime(val) {
+      stopSlowMoPlayback();
+      currentStepCursor = parseInt(val);
+      document.getElementById("timeScrubberLabel").innerText = `t = ${Math.round(currentStepCursor * dtMs)} ms`;
+      renderAllCanvases();
+    }
+
+    function setStatus(text, colorClass) {
+      const badge = document.getElementById("statusBadge");
+      badge.className = `text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 ${colorClass}`;
+      badge.innerText = text;
+    }
+
+    // ============================================================================
+    // 5. MASTER CANVAS RENDERING ENGINE
+    // ============================================================================
+    function getActiveTelemetry() {
+      const mid = document.getElementById("activeModelView").value;
+      const hist = modelHistories[mid];
+      if (!hist || !hist.snapshots) return null;
+      return hist.snapshots[currentEpoch] || hist.snapshots[0] || null;
+    }
+
+    function renderAllCanvases() {
+      const mid = document.getElementById("activeModelView").value;
+      const telem = getActiveTelemetry();
+      if (telem) {
+        totalStepsInTrial = telem.total_steps;
+        if (currentStepCursor >= totalStepsInTrial) {
+          currentStepCursor = totalStepsInTrial - 1;
+        }
+        updateKpiBar(mid, telem);
+        updateLiveNarrative(mid, telem);
+        drawNetworkTopology(mid, telem, currentStepCursor);
+        drawSpikeRaster(mid, telem, currentStepCursor);
+        drawBiophysicalTraces(mid, telem, currentStepCursor);
+      }
+      drawLearningCurves();
+    }
+
+    function updateKpiBar(mid, telem) {
+      const hist = modelHistories[mid];
+      const acc = (hist && hist.accCurve && hist.accCurve[currentEpoch] !== undefined)
+        ? hist.accCurve[currentEpoch].toFixed(1) + "%"
+        : "--%";
+
+      document.getElementById("kpiEpoch").innerText = `${currentEpoch} / ${maxTrainedEpoch}`;
+      document.getElementById("kpiAcc").innerText = acc;
+      document.getElementById("kpiDelaySpk").innerText = `${telem.delay_bridge_spikes || 0} spk`;
+      document.getElementById("kpiCa1Pos").innerText = telem.ca1_pos_miss_spikes.length;
+      document.getElementById("kpiCa1Neg").innerText = telem.ca1_neg_violation_spikes.length;
+
+      const pill = document.getElementById("predStatusPill");
+      const omit = document.getElementById("chkOmitTarget").checked;
+      if (omit && telem.ca1_neg_violation_spikes.length > 0) {
+        pill.className = "text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40";
+        pill.innerText = `⚡ Omission Surprise! CA1⁻ fired ${telem.ca1_neg_violation_spikes.length} violation spikes`;
+      } else if (telem.is_correct) {
+        pill.className = "text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+        pill.innerText = `✔ Predicted Class ${telem.pred_label} == True Class ${telem.true_label} (Miss Errors: ${telem.ca1_pos_miss_spikes.length})`;
+      } else {
+        pill.className = "text-[11px] font-mono px-2.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40";
+        pill.innerText = `✖ Predicted Class ${telem.pred_label} != True Class ${telem.true_label} (Miss Errors: ${telem.ca1_pos_miss_spikes.length})`;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // CANVAS 1: INTERACTIVE NEURAL NETWORK VISUALIZER (TOPOLOGY & ACTIVE SPIKES)
+    // ----------------------------------------------------------------------------
+    function drawNetworkTopology(mid, telem, stepIdx) {
+      const canvas = document.getElementById("netTopologyCanvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const t = Math.min(stepIdx, telem.total_steps - 1);
+      const inSpk = telem.input_spikes[t] || [];
+      const hidSpk = telem.hidden_spikes[t] || [];
+      const probs = telem.probs_trace[t] || [0.5, 0.5];
+      const oscVal = telem.osc_trace[t] || 0.0;
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 11px Inter, sans-serif";
+      ctx.fillText("① SENSORY INPUT (EC)", 18, 22);
+      ctx.fillText("② RECURRENT SNN (CA3 / LSNN)", 238, 22);
+      ctx.fillText("③ READOUT & COMPARATOR", 488, 22);
+
+      const nInNodes = 12;
+      const inCoords = [];
+      for (let i = 0; i < nInNodes; i++) {
+        const y = 42 + (i * (H - 60)) / (nInNodes - 1);
+        const chIdx = Math.floor((i * inSpk.length) / nInNodes);
+        const active = inSpk[chIdx] > 0;
+        inCoords.push({ x: 65, y, active });
+      }
+
+      const nHidNodes = Math.min(24, hidSpk.length);
+      const hidCoords = [];
+      const cx = 328, cy = H / 2 + 8;
+      for (let j = 0; j < nHidNodes; j++) {
+        const angle = (2 * Math.PI * j) / nHidNodes - Math.PI / 2;
+        const radius = (j % 2 === 0) ? 76 : 43;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        const active = hidSpk[j] > 0;
+        hidCoords.push({ x, y, active, isAlif: j < nHidNodes / 2 });
+      }
+
+      const nClasses = probs.length;
+      const outCoords = [];
+      for (let c = 0; c < nClasses; c++) {
+        const y = 55 + c * 46;
+        outCoords.push({ x: 555, y, prob: probs[c], label: `Class ${c}` });
+      }
+      const ca1PosActive = telem.ca1_pos_miss_spikes.includes(t);
+      const ca1NegActive = telem.ca1_neg_violation_spikes.includes(t);
+      const ca1PosNode = { x: 555, y: H - 56, active: ca1PosActive, label: "CA1⁺ (Miss Error)" };
+      const ca1NegNode = { x: 555, y: H - 22, active: ca1NegActive, label: "CA1⁻ (Surprise)" };
+
+      ctx.lineWidth = 1.0;
+      inCoords.forEach((inp, i) => {
+        hidCoords.forEach((hid, j) => {
+          if ((i + j) % 4 === 0) {
+            ctx.strokeStyle = inp.active
+              ? "rgba(34, 211, 238, 0.55)"
+              : "rgba(51, 65, 85, 0.22)";
+            ctx.beginPath();
+            ctx.moveTo(inp.x, inp.y);
+            ctx.lineTo(hid.x, hid.y);
+            ctx.stroke();
+          }
+        });
+      });
+
+      hidCoords.forEach((h1, j) => {
+        const h2 = hidCoords[(j + 3) % hidCoords.length];
+        ctx.strokeStyle = (h1.active || h2.active)
+          ? "rgba(59, 130, 246, 0.65)"
+          : "rgba(51, 65, 85, 0.25)";
+        ctx.beginPath();
+        ctx.moveTo(h1.x, h1.y);
+        ctx.lineTo(h2.x, h2.y);
+        ctx.stroke();
+      });
+
+      hidCoords.forEach((hid, j) => {
+        if (j % 2 === 0) {
+          outCoords.forEach(out => {
+            ctx.strokeStyle = hid.active
+              ? "rgba(16, 185, 129, 0.55)"
+              : "rgba(51, 65, 85, 0.20)";
+            ctx.beginPath();
+            ctx.moveTo(hid.x, hid.y);
+            ctx.lineTo(out.x, out.y);
+            ctx.stroke();
+          });
+        }
+      });
+
+      if (Math.abs(oscVal) > 0.001) {
+        const haloR = 24 + Math.max(0, oscVal * 80);
+        const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, haloR);
+        grad.addColorStop(0, "rgba(168, 85, 247, 0.55)");
+        grad.addColorStop(1, "rgba(168, 85, 247, 0.0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, haloR, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#c084fc";
+      ctx.font = "10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`t=${Math.round(t * dtMs)}ms`, cx, cy + 4);
+
+      inCoords.forEach(node => {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.active ? 6.5 : 4.5, 0, 2 * Math.PI);
+        ctx.fillStyle = node.active ? "#22d3ee" : "#1e293b";
+        ctx.fill();
+        ctx.strokeStyle = node.active ? "#cffafe" : "#475569";
+        ctx.stroke();
+      });
+
+      hidCoords.forEach(node => {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.active ? 7.5 : 5.0, 0, 2 * Math.PI);
+        if (node.active) {
+          ctx.fillStyle = node.isAlif ? "#f59e0b" : "#3b82f6";
+          ctx.shadowColor = node.isAlif ? "#f59e0b" : "#3b82f6";
+          ctx.shadowBlur = 10;
+        } else {
+          ctx.fillStyle = "#0f172a";
+          ctx.shadowBlur = 0;
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = node.isAlif ? "#fbbf24" : "#60a5fa";
+        ctx.stroke();
+      });
+
+      ctx.textAlign = "left";
+      outCoords.forEach((out, idx) => {
+        const isTrue = idx === telem.true_label;
+        ctx.beginPath();
+        ctx.arc(out.x, out.y, 9, 0, 2 * Math.PI);
+        ctx.fillStyle = out.prob > 0.5 ? "#10b981" : "#1e293b";
+        ctx.fill();
+        ctx.strokeStyle = isTrue ? "#34d399" : "#64748b";
+        ctx.lineWidth = isTrue ? 2.2 : 1.2;
+        ctx.stroke();
+        ctx.lineWidth = 1.0;
+
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "11px monospace";
+        ctx.fillText(`${out.label}: ${(out.prob * 100).toFixed(0)}%`, out.x + 14, out.y + 4);
+      });
+
+      [
+        { n: ca1PosNode, col: "#f43f5e" },
+        { n: ca1NegNode, col: "#f59e0b" }
+      ].forEach(item => {
+        ctx.beginPath();
+        ctx.arc(item.n.x, item.n.y, item.n.active ? 9.5 : 6.5, 0, 2 * Math.PI);
+        ctx.fillStyle = item.n.active ? item.col : "#1e293b";
+        ctx.fill();
+        ctx.strokeStyle = item.col;
+        ctx.stroke();
+        ctx.fillStyle = item.n.active ? "#ffffff" : "#94a3b8";
+        ctx.font = "10.5px monospace";
+        ctx.fillText(item.n.label, item.n.x + 14, item.n.y + 4);
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // CANVAS 2: MULTI-LAYER SPIKE RASTER PLOT WITH NUMBERED ZONES
+    // ----------------------------------------------------------------------------
+    function drawSpikeRaster(mid, telem, stepCursor) {
+      const canvas = document.getElementById("rasterCanvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const T = telem.total_steps;
+      const padL = 115, padR = 20, padT = 24, padB = 24;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      const xOf = (t) => padL + (t / Math.max(1, T - 1)) * plotW;
+
+      const xCueEnd = xOf(telem.cues_end_step);
+      const xRecallStart = xOf(telem.recall_start_step);
+
+      // Zone 1: Cue Input
+      ctx.fillStyle = "rgba(6, 182, 212, 0.07)";
+      ctx.fillRect(padL, padT, xCueEnd - padL, plotH);
+
+      // Zone 2: Silent Memory Delay
+      ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
+      ctx.fillRect(xCueEnd, padT, xRecallStart - xCueEnd, plotH);
+
+      // Zone 3: Recall & Error Check
+      ctx.fillStyle = "rgba(16, 185, 129, 0.09)";
+      ctx.fillRect(xRecallStart, padT, padL + plotW - xRecallStart, plotH);
+
+      // Top Zone Headers
+      ctx.font = "bold 10.5px Inter, sans-serif";
+      ctx.fillStyle = "#22d3ee";
+      ctx.fillText("① SENSORY CUE INPUT", padL + 6, 15);
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText("② SILENT MEMORY DELAY (NO INPUT — BRIDGE VIA ALIF / THETA)", xCueEnd + 10, 15);
+      ctx.fillStyle = "#34d399";
+      ctx.fillText("③ RECALL & ERROR CHECK", xRecallStart + 4, 15);
+
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
+      ctx.setLineDash([4, 4]);
+      [xCueEnd, xRecallStart].forEach(xPos => {
+        ctx.beginPath();
+        ctx.moveTo(xPos, padT);
+        ctx.lineTo(xPos, padT + plotH);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      // Row Labels on Left
+      ctx.fillStyle = "#22d3ee";
+      ctx.font = "bold 10.5px monospace";
+      ctx.fillText("1. Input Spikes", 8, padT + 34);
+      ctx.fillStyle = "#60a5fa";
+      ctx.fillText("2. Hidden SNN", 8, padT + 120);
+      ctx.fillStyle = "#f43f5e";
+      ctx.fillText("3. Error Spikes", 8, padT + 195);
+
+      const yBand1 = padT + 64;
+      const yBand2 = padT + 170;
+      ctx.strokeStyle = "rgba(51, 65, 85, 0.75)";
+      [yBand1, yBand2].forEach(yPos => {
+        ctx.beginPath();
+        ctx.moveTo(padL, yPos);
+        ctx.lineTo(padL + plotW, yPos);
+        ctx.stroke();
+      });
+
+      const maxT = Math.min(T - 1, stepCursor);
+
+      // 1. Input Spikes
+      const nIn = telem.input_spikes[0].length;
+      ctx.fillStyle = "#22d3ee";
+      for (let t = 0; t <= maxT; t++) {
+        const x = xOf(t);
+        const row = telem.input_spikes[t];
+        for (let i = 0; i < nIn; i++) {
+          if (row[i] > 0) {
+            const y = padT + 4 + (i / nIn) * (yBand1 - padT - 8);
+            ctx.fillRect(x - 1, y, 2.2, 2.2);
+          }
+        }
+      }
+
+      // 2. Hidden Recurrent Spikes
+      const nHid = telem.hidden_spikes[0].length;
+      for (let t = 0; t <= maxT; t++) {
+        const x = xOf(t);
+        const row = telem.hidden_spikes[t];
+        for (let j = 0; j < nHid; j++) {
+          if (row[j] > 0) {
+            const y = yBand1 + 4 + (j / nHid) * (yBand2 - yBand1 - 8);
+            ctx.fillStyle = (j < nHid / 2) ? "#60a5fa" : "#38bdf8";
+            ctx.fillRect(x - 1, y, 2.4, 2.4);
+          }
+        }
+      }
+
+      // 3. Dual CA1 Comparator Error Spikes (CA1+ Miss in Red, CA1- Surprise in Amber)
+      const yPosRow = yBand2 + 14;
+      const yNegRow = yBand2 + 32;
+
+      ctx.fillStyle = "#f43f5e";
+      telem.ca1_pos_miss_spikes.forEach(t => {
+        if (t <= maxT) {
+          const x = xOf(t);
+          ctx.fillRect(x - 1.5, yPosRow - 5, 3.8, 10);
+        }
+      });
+
+      ctx.fillStyle = "#f59e0b";
+      telem.ca1_neg_violation_spikes.forEach(t => {
+        if (t <= maxT) {
+          const x = xOf(t);
+          ctx.fillRect(x - 1.5, yNegRow - 5, 3.8, 10);
+        }
+      });
+
+      // Time Cursor
+      const xCur = xOf(maxT);
+      ctx.strokeStyle = "#f8fafc";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xCur, padT);
+      ctx.lineTo(xCur, padT + plotH);
+      ctx.stroke();
+      ctx.lineWidth = 1.0;
+
+      // Bottom time axis labels
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "10px monospace";
+      ctx.fillText("0 ms", padL, H - 6);
+      ctx.fillText(`${Math.round(telem.cues_end_step * telem.dt_ms)} ms`, xCueEnd - 12, H - 6);
+      ctx.fillText(`${Math.round(telem.recall_start_step * telem.dt_ms)} ms`, xRecallStart - 15, H - 6);
+      ctx.fillText(`${Math.round(T * telem.dt_ms)} ms`, padL + plotW - 38, H - 6);
+    }
+
+    // ----------------------------------------------------------------------------
+    // CANVAS 3: BIOPHYSICAL & PLASTICITY OSCILLOSCOPE TRACES
+    // ----------------------------------------------------------------------------
+    function drawBiophysicalTraces(mid, telem, stepCursor) {
+      const canvas = document.getElementById("tracesCanvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const T = telem.total_steps;
+      const maxT = Math.min(T - 1, stepCursor);
+      const padL = 115, padR = 20, padT = 14, padB = 20;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      const xOf = (t) => padL + (t / Math.max(1, T - 1)) * plotW;
+      const yOfVal = (v, vmin, vmax) => padT + plotH - ((v - vmin) / Math.max(1e-5, vmax - vmin)) * plotH;
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "10.5px monospace";
+      ctx.fillText("Voltage & Thr", 8, padT + 35);
+      ctx.fillText("Theta & Trace", 8, padT + 105);
+
+      const drawCurve = (arr, vmin, vmax, color, dashed = false) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.9;
+        if (dashed) ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        for (let t = 0; t <= maxT; t++) {
+          const x = xOf(t);
+          const y = yOfVal(arr[t], vmin, vmax);
+          if (t === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      };
+
+      const vMin = -0.3, vMax = 1.3;
+      drawCurve(telem.v_trace, vMin, vMax, "#10b981", false);
+      drawCurve(telem.thr_trace, vMin, vMax, "#f59e0b", true);
+      drawCurve(telem.osc_trace, -0.4, 0.4, "#a855f7", false);
+
+      const eMax = Math.max(0.5, ...telem.elig_trace);
+      drawCurve(telem.elig_trace, 0.0, eMax * 1.15, "#22d3ee", false);
+    }
+
+    // ----------------------------------------------------------------------------
+    // CANVAS 4: MULTI-MODEL LIVE ACCURACY CONVERGENCE CURVES
+    // ----------------------------------------------------------------------------
+    function drawLearningCurves() {
+      const canvas = document.getElementById("learningCurveCanvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const padL = 42, padR = 16, padT = 18, padB = 28;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      ctx.strokeStyle = "#334155";
+      ctx.strokeRect(padL, padT, plotW, plotH);
+
+      const yOfAcc = (acc) => padT + plotH - ((acc - 20) / 82.0) * plotH;
+      const y50 = yOfAcc(50.0);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padL, y50);
+      ctx.lineTo(padL + plotW, y50);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "10px monospace";
+      ctx.fillText("100%", 6, yOfAcc(100) + 4);
+      ctx.fillText("50%", 12, y50 + 4);
+      ctx.fillText("Training Epoch", padL + plotW / 2 - 35, H - 6);
+
+      const maxEp = Math.max(5, maxTrainedEpoch);
+      const xOfEp = (ep) => padL + (ep / maxEp) * plotW;
+
+      let legendY = padT + 14;
+      Object.keys(modelHistories).forEach(mid => {
+        const curve = modelHistories[mid].accCurve || [];
+        if (curve.length === 0) return;
+        const meta = MODEL_META[mid];
+        const col = meta ? meta.color : "#3b82f6";
+
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.3;
+        ctx.beginPath();
+        curve.forEach((acc, ep) => {
+          const x = xOfEp(ep);
+          const y = yOfAcc(Math.max(20, Math.min(100, acc)));
+          if (ep === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        const lastAcc = curve[curve.length - 1].toFixed(1);
+        ctx.fillStyle = col;
+        ctx.fillRect(padL + 8, legendY - 7, 8, 8);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "10.5px Inter, sans-serif";
+        ctx.fillText(`${meta.name.split('(')[0].trim()}: ${lastAcc}%`, padL + 20, legendY);
+        legendY += 15;
+      });
+    }
+  </script>
+</body>
+</html>
